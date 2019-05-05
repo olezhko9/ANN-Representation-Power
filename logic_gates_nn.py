@@ -2,12 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class NN:
-    def __init__(self, n_input_neurons, n_hidden_neurons, n_output_neurons, activation=None):
+class LogicNeuralNetwork:
+    def __init__(self, n_input_neurons, n_hidden_neurons, n_output_neurons, learning_rate=0.001, activation=None):
         # number of nodes in layers
         self.ni = n_input_neurons + 1  # +1 for bias
         self.nh = n_hidden_neurons
         self.no = n_output_neurons
+        self.lr = learning_rate
         self.activation = activation
 
         # initialize node-activations
@@ -18,10 +19,6 @@ class NN:
         # initialize node weights to random vals
         self.wi = np.random.uniform(-0.2, 0.2, (self.ni, self.nh))
         self.wo = np.random.uniform(-2.0, 2.0, (self.nh, self.no))
-
-        # create last change in weights matrices for momentum
-        self.ci = np.zeros((self.ni, self.nh))
-        self.co = np.zeros((self.nh, self.no))
 
     def feed_forward(self, inputs):
         if len(inputs) != self.ni - 1:
@@ -69,20 +66,20 @@ class NN:
 
         return r
 
-    def back_propagation(self, targets, N, M):
-
+    def back_propagation(self, targets):
+        # dE/dw[j][k] = (t[k] - ao[k]) * s'( SUM( w[j][k]*ah[j] ) ) * ah[j]
+        # calc output deltas
         output_deltas = [0.0] * self.no
         for k in range(self.no):
             error = targets[k] - self.ao[k]
             output_deltas[k] = error * self.apply_activation_derivative(self.ao[k])
 
-            # update output weights
+        # update output weights
         for j in range(self.nh):
             for k in range(self.no):
                 # output_deltas[k] * self.ah[j] is the full derivative of dError/dweight[j][k]
                 change = output_deltas[k] * self.ah[j]
-                self.wo[j][k] += N * change + M * self.co[j][k]
-                self.co[j][k] = change
+                self.wo[j][k] += self.lr * change
 
         # calc hidden deltas
         hidden_deltas = [0.0] * self.nh
@@ -96,9 +93,7 @@ class NN:
         for i in range(self.ni):
             for j in range(self.nh):
                 change = hidden_deltas[j] * self.ai[i]
-                # print('activation',self.ai[i],'synapse',i,j,'change',change)
-                self.wi[i][j] += N * change + M * self.ci[i][j]
-                self.ci[i][j] = change
+                self.wi[i][j] += self.lr * change
 
         # calc combined error
         # 1/2 for differential convenience & **2 for modulus
@@ -118,32 +113,35 @@ class NN:
         print('')
 
     def test(self, patterns):
+        predicted_labels = []
         for p in patterns:
             inputs = p[0]
-            pred_proba = self.feed_forward(inputs)
-            print('Inputs:', p[0], '-->', pred_proba, '\tPredicted', [int(round(pred_proba[0]))], '\tTarget', p[1])
+            predicted_proba = self.feed_forward(inputs)
+            predicted_labels.append(int(round(predicted_proba[0])))
+        return predicted_labels
 
-    def train(self, patterns, max_iterations=1000, N=0.005, M=0.1):
+    def train(self, patterns, max_iterations=1000, plot_error=False):
         errors = []
-        error = 100
         for i in range(max_iterations):
+            error = 0.0
             for p in patterns:
                 inputs = p[0]
                 targets = p[1]
                 self.feed_forward(inputs)
-                error = self.back_propagation(targets, N, M)
+                error += self.back_propagation(targets)
 
-            if i % 20 == 0:
+            if i % 10 == 0:
                 errors.append(error)
 
-        plt.plot(errors)
-        plt.title('Changes in MSE')
-        plt.xlabel('Epoch (every 10th)')
-        plt.ylabel('MSE')
-        plt.show()
+        if plot_error:
+            plt.plot(errors)
+            plt.title('Changes in MSE')
+            plt.xlabel('Epoch (every 10th)')
+            plt.ylabel('MSE')
+            plt.show()
 
 def main():
-    pat = [
+    train_data = [
         # AND
         [[0, 0, 0], [0]],
         [[0, 0, 1], [0]],
@@ -168,20 +166,25 @@ def main():
         [[-3, 1, 0], [1]],
         [[-3, 1, 1], [0]],
         # XOR
-        [[4, 0, 0], [0]],
-        [[4, 0, 1], [1]],
-        [[4, 1, 0], [1]],
-        [[4, 1, 1], [0]],
-        # NXOR
+        # [[4, 0, 0], [0]],
+        # [[4, 0, 1], [1]],
+        # [[4, 1, 0], [1]],
+        # [[4, 1, 1], [0]],
+        # # NXOR
         # [[-4, 0, 0], [1]],
         # [[-4, 0, 1], [0]],
         # [[-4, 1, 0], [0]],
         # [[-4, 1, 1], [1]],
     ]
-    myNN = NN(3, 8, 1, activation="tanh")
-    myNN.train(pat)
-    myNN.test(pat)
-    myNN.weights()
+    
+    logic_nn = LogicNeuralNetwork(3, 3, 1, learning_rate=0.1, activation="tanh")
+    logic_nn.train(train_data, plot_error=True)
+    pred_labels = logic_nn.test(train_data)
+
+    for i in range(len(pred_labels)):
+        print('Inputs:', train_data[i][0], '-->', 'Predicted', [pred_labels[i]], '\tTarget', train_data[i][1])
+        
+    logic_nn.weights()
 
 if __name__ == "__main__":
     main()
