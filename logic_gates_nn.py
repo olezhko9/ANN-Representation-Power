@@ -1,14 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+np.random.seed(2019)
+
 
 class LogicNeuralNetwork:
-    def __init__(self, n_input_neurons, n_hidden_neurons, n_output_neurons, learning_rate=0.001, activation=None):
+    def __init__(self, n_input_neurons, n_hidden_neurons, n_output_neurons, learning_rate=0.001, max_iterations=1000,
+                 activation=None):
         # number of nodes in layers
         self.ni = n_input_neurons + 1  # +1 for bias
         self.nh = n_hidden_neurons
         self.no = n_output_neurons
         self.lr = learning_rate
+        self.max_iterations = max_iterations
         self.activation = activation
 
         # initialize node-activations
@@ -120,9 +124,9 @@ class LogicNeuralNetwork:
             predicted_labels.append(int(round(predicted_proba[0])))
         return predicted_labels
 
-    def train(self, patterns, max_iterations=1000, plot_error=False):
+    def train(self, patterns, plot_error=False):
         errors = []
-        for i in range(max_iterations):
+        for i in range(self.max_iterations):
             error = 0.0
             for p in patterns:
                 inputs = p[0]
@@ -130,62 +134,71 @@ class LogicNeuralNetwork:
                 self.feed_forward(inputs)
                 error += self.back_propagation(targets)
 
-            if i % 10 == 0:
+            if i % 50 == 0:
                 errors.append(error)
 
+        print("MSE: ", errors[-1])
+
         if plot_error:
+            errors.append(0)
             plt.plot(errors)
             plt.title('Changes in MSE')
             plt.xlabel('Epoch (every 10th)')
             plt.ylabel('MSE')
             plt.show()
 
+
 def main():
     train_data = [
         # AND
-        [[0, 0, 0], [0]],
-        [[0, 0, 1], [0]],
-        [[0, 1, 0], [0]],
-        [[0, 1, 1], [1]],
-        # OR
         [[1, 0, 0], [0]],
-        [[1, 0, 1], [1]],
-        [[1, 1, 0], [1]],
+        [[1, 0, 1], [0]],
+        [[1, 1, 0], [0]],
         [[1, 1, 1], [1]],
+        # OR
+        [[2, 0, 0], [0]],
+        [[2, 0, 1], [1]],
+        [[2, 1, 0], [1]],
+        [[2, 1, 1], [1]],
+        # XOR
+        [[3, 0, 0], [0]],
+        [[3, 0, 1], [1]],
+        [[3, 1, 0], [1]],
+        [[3, 1, 1], [0]],
+        # X -> Y
+        [[4, 0, 0], [1]],
+        [[4, 0, 1], [1]],
+        [[4, 1, 0], [0]],
+        [[4, 1, 1], [1]],
         # NOT
         [[-1, 0, 0], [1]],
         [[-1, 1, 1], [0]],
-        # NOR
+        # X | Y similar to NAND
         [[-2, 0, 0], [1]],
-        [[-2, 0, 1], [0]],
-        [[-2, 1, 0], [0]],
+        [[-2, 0, 1], [1]],
+        [[-2, 1, 0], [1]],
         [[-2, 1, 1], [0]],
-        # NAND
+        # X ↓ Y similar to NOR
         [[-3, 0, 0], [1]],
-        [[-3, 0, 1], [1]],
-        [[-3, 1, 0], [1]],
+        [[-3, 0, 1], [0]],
+        [[-3, 1, 0], [0]],
         [[-3, 1, 1], [0]],
-        # XOR
-        # [[4, 0, 0], [0]],
-        # [[4, 0, 1], [1]],
-        # [[4, 1, 0], [1]],
-        # [[4, 1, 1], [0]],
-        # # NXOR
-        # [[-4, 0, 0], [1]],
-        # [[-4, 0, 1], [0]],
-        # [[-4, 1, 0], [0]],
-        # [[-4, 1, 1], [1]],
+        # X = Y similar to NXOR
+        [[-4, 0, 0], [1]],
+        [[-4, 0, 1], [0]],
+        [[-4, 1, 0], [0]],
+        [[-4, 1, 1], [1]],
     ]
-    
-    logic_nn = LogicNeuralNetwork(3, 3, 1, learning_rate=0.1, activation="tanh")
+
+    logic_nn = LogicNeuralNetwork(3, 15, 1, learning_rate=0.01, max_iterations=4000, activation="tanh")
     logic_nn.train(train_data, plot_error=True)
     pred_labels = logic_nn.test(train_data)
 
     for i in range(len(pred_labels)):
         print('Inputs:', train_data[i][0], '-->', 'Predicted', [pred_labels[i]], '\tTarget', train_data[i][1])
-        
+
     logic_nn.weights()
+
 
 if __name__ == "__main__":
     main()
-
