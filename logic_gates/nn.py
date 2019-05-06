@@ -119,7 +119,7 @@ class LogicNeuralNetwork:
     def test(self, patterns):
         predicted_labels = []
         for p in patterns:
-            inputs = p[0]
+            inputs = p
             predicted_proba = self.feed_forward(inputs)
             predicted_labels.append(int(round(predicted_proba[0])))
         return predicted_labels
@@ -129,8 +129,8 @@ class LogicNeuralNetwork:
         for i in range(self.max_iterations):
             error = 0.0
             for p in patterns:
-                inputs = p[0]
-                targets = p[1]
+                inputs = p[:-1]
+                targets = [p[-1]]
                 self.feed_forward(inputs)
                 error += self.back_propagation(targets)
 
