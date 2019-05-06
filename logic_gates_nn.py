@@ -21,8 +21,8 @@ class LogicNeuralNetwork:
         self.ao = [1.0] * self.no
 
         # initialize node weights to random vals
-        self.wi = np.random.uniform(-0.2, 0.2, (self.ni, self.nh))
-        self.wo = np.random.uniform(-2.0, 2.0, (self.nh, self.no))
+        self.wi = np.random.uniform(-1.0, 1.0, (self.ni, self.nh))
+        self.wo = np.random.uniform(-1.0, 1.0, (self.nh, self.no))
 
     def feed_forward(self, inputs):
         if len(inputs) != self.ni - 1:
@@ -140,63 +140,31 @@ class LogicNeuralNetwork:
         print("MSE: ", errors[-1])
 
         if plot_error:
-            errors.append(0)
             plt.plot(errors)
             plt.title('Changes in MSE')
             plt.xlabel('Epoch (every 10th)')
             plt.ylabel('MSE')
             plt.show()
 
+    @staticmethod
+    def accuracy(test_data, pred_data):
+        if len(test_data) != len(pred_data):
+            print("array sizes do not match")
+
+        return (np.array(test_data) == np.array(pred_data)).mean() * 100
+
 
 def main():
-    train_data = [
-        # AND
-        [[1, 0, 0], [0]],
-        [[1, 0, 1], [0]],
-        [[1, 1, 0], [0]],
-        [[1, 1, 1], [1]],
-        # OR
-        [[2, 0, 0], [0]],
-        [[2, 0, 1], [1]],
-        [[2, 1, 0], [1]],
-        [[2, 1, 1], [1]],
-        # XOR
-        [[3, 0, 0], [0]],
-        [[3, 0, 1], [1]],
-        [[3, 1, 0], [1]],
-        [[3, 1, 1], [0]],
-        # X -> Y
-        [[4, 0, 0], [1]],
-        [[4, 0, 1], [1]],
-        [[4, 1, 0], [0]],
-        [[4, 1, 1], [1]],
-        # NOT
-        [[-1, 0, 0], [1]],
-        [[-1, 1, 1], [0]],
-        # X | Y similar to NAND
-        [[-2, 0, 0], [1]],
-        [[-2, 0, 1], [1]],
-        [[-2, 1, 0], [1]],
-        [[-2, 1, 1], [0]],
-        # X ↓ Y similar to NOR
-        [[-3, 0, 0], [1]],
-        [[-3, 0, 1], [0]],
-        [[-3, 1, 0], [0]],
-        [[-3, 1, 1], [0]],
-        # X = Y similar to NXOR
-        [[-4, 0, 0], [1]],
-        [[-4, 0, 1], [0]],
-        [[-4, 1, 0], [0]],
-        [[-4, 1, 1], [1]],
-    ]
+    from logic_gates_dataset import logic_dataset
 
-    logic_nn = LogicNeuralNetwork(3, 15, 1, learning_rate=0.01, max_iterations=4000, activation="tanh")
-    logic_nn.train(train_data, plot_error=True)
-    pred_labels = logic_nn.test(train_data)
+    logic_nn = LogicNeuralNetwork(3, 12, 1, learning_rate=0.04, max_iterations=2000, activation="tanh")
+    logic_nn.train(logic_dataset, plot_error=True)
+    pred_labels = logic_nn.test(logic_dataset)
 
     for i in range(len(pred_labels)):
-        print('Inputs:', train_data[i][0], '-->', 'Predicted', [pred_labels[i]], '\tTarget', train_data[i][1])
+        print('Inputs:', logic_dataset[i][0], '-->', 'Predicted', [pred_labels[i]], '\tTarget', logic_dataset[i][1])
 
+    print(logic_nn.accuracy([logic_dataset[i][1][0] for i in range(len(logic_dataset))], pred_labels), "%")
     logic_nn.weights()
 
 
