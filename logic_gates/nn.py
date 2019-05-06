@@ -154,19 +154,5 @@ class LogicNeuralNetwork:
         return (np.array(test_data) == np.array(pred_data)).mean() * 100
 
 
-def main():
-    from logic_gates_dataset import logic_dataset
-
-    logic_nn = LogicNeuralNetwork(3, 12, 1, learning_rate=0.04, max_iterations=2000, activation="tanh")
-    logic_nn.train(logic_dataset, plot_error=True)
-    pred_labels = logic_nn.test(logic_dataset)
-
-    for i in range(len(pred_labels)):
-        print('Inputs:', logic_dataset[i][0], '-->', 'Predicted', [pred_labels[i]], '\tTarget', logic_dataset[i][1])
-
-    print(logic_nn.accuracy([logic_dataset[i][1][0] for i in range(len(logic_dataset))], pred_labels), "%")
-    logic_nn.weights()
-
-
 if __name__ == "__main__":
-    main()
+    pass
