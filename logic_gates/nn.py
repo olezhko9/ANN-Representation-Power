@@ -1,15 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from logic_gates.logic_gates_dataset import logic_dataset
-
-np.random.seed(2628856917)
-print(np.random.get_state()[1][0])
 
 
 class Layer:
 
     def __init__(self, n_input, n_neurons, activation=None, weights=None, bias=None):
-
         self.weights = weights if weights is not None else np.random.rand(n_input, n_neurons)
         self.activation = activation
         self.bias = bias if bias is not None else np.random.rand(n_neurons)
@@ -48,8 +42,10 @@ class Layer:
 
 
 class NeuralNetwork:
-    def __init__(self):
+
+    def __init__(self, seed):
         self._layers = []
+        np.random.seed(seed)
 
     def add_layer(self, layer):
         self._layers.append(layer)
@@ -101,34 +97,14 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
     nn = NeuralNetwork()
-    nn.add_layer(Layer(3, 15, 'tanh'))
-    # nn.add_layer(Layer(12, 6, 'tanh'))
-    nn.add_layer(Layer(15, 1, 'tanh'))
+    nn.add_layer(Layer(2, 3, 'tanh'))
+    nn.add_layer(Layer(3, 1, 'tanh'))
 
-    # X = np.array([
-    #     [0, 0, 0],
-    #     [0, 0, 1],
-    #     [0, 1, 0],
-    #     [0, 1, 1],
-    #     [1, 0, 0],
-    #     [1, 0, 1],
-    #     [1, 1, 0],
-    #     [1, 1, 1],
-    # ])
+    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    y = np.array([[0], [0], [0], [1]])
 
-    # y = np.array([[0], [0], [0], [0], [0], [0], [0], [1]])
+    errors = nn.train(X, y, 0.1, 1000)
 
-    X = logic_dataset["X"]
-    y = logic_dataset["y"]
-
-    errors = nn.train(X, y, 0.01, 10000)
-    y_pred = np.round(nn.predict(X)).astype(dtype='int8')
-    print(y_pred)
+    y_pred = np.round(nn.predict(X)).astype("int32")
     print('Accuracy: %.2f%%' % (nn.accuracy(y_pred, y) * 100))
 
-
-    plt.plot(errors)
-    plt.title('Changes in MSE')
-    plt.xlabel('Epoch (every 10th)')
-    plt.ylabel('MSE')
-    plt.show()

@@ -1,4 +1,5 @@
 import re
+import numpy as np
 
 logic_dict = {
     "and": 1,
@@ -19,7 +20,7 @@ class LogicExpressionSolver:
     def __init__(self, solver):
         self.solver = solver
 
-    def solve(self, expression, inputs, verbose=False):
+    def solve(self, expression, inputs, verbose=True):
         self.verbose = verbose
         x, y, z = inputs
         expression = expression.lower()
@@ -37,7 +38,7 @@ class LogicExpressionSolver:
         not_pattetn = re.compile('not \d')
         while not_pattetn.search(expression):
             val = int(not_pattetn.search(expression).group(0)[-1])
-            pred = str(self.solver.test([[logic_dict["not"], val, val]])[0])
+            pred = str(np.round(self.solver.predict([[logic_dict["not"], val, val]])[0][0]).astype("int8"))
             expression = not_pattetn.sub(pred, expression, 1)
             if self.verbose:
                 print(expression)
@@ -45,7 +46,7 @@ class LogicExpressionSolver:
         par_pattern = re.compile('\((\d \w+ \d)\)')
         while par_pattern.search(expression):
             match = par_pattern.search(expression).group(1).split(' ')
-            pred = str(self.solver.test([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0])
+            pred = str(np.round(self.solver.predict([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0][0]).astype("int8"))
             expression = par_pattern.sub(pred, expression, 1)
             if self.verbose:
                 print(expression)
@@ -53,7 +54,7 @@ class LogicExpressionSolver:
         and_pattern = re.compile('\d and \d')
         while and_pattern.search(expression):
             match = and_pattern.search(expression).group(0).split(' ')
-            pred = str(self.solver.test([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0])
+            pred = str(np.round(self.solver.predict([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0][0]).astype("int8"))
             expression = and_pattern.sub(pred, expression, 1)
             if self.verbose:
                 print(expression)
@@ -61,7 +62,7 @@ class LogicExpressionSolver:
         any_pattern = re.compile('(?!\()\d \w+ \d(?!\))')
         while any_pattern.search(expression):
             match = any_pattern.search(expression).group(0).split(' ')
-            pred = str(self.solver.test([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0])
+            pred = str(np.round(self.solver.predict([[logic_dict[match[1]], int(match[0]), int(match[2])]])[0][0]).astype("int8"))
             expression = any_pattern.sub(pred, expression, 1)
             if self.verbose:
                 print(expression)

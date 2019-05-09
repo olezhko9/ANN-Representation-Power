@@ -1,19 +1,28 @@
-from logic_gates.nn import LogicNeuralNetwork
+from logic_gates.nn import NeuralNetwork, Layer
 from logic_gates.solver import LogicExpressionSolver
-from logic_gates_dataset import logic_dataset
+from logic_gates.dataset import logic_dataset
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 if __name__ == '__main__':
 
-    logic_nn = LogicNeuralNetwork(3, 12, 1, learning_rate=0.04, max_iterations=2000, activation="tanh")
+    logic_nn = NeuralNetwork(seed=2628856917)
+    logic_nn.add_layer(Layer(3, 15, 'tanh'))
+    logic_nn.add_layer(Layer(15, 1, 'tanh'))
 
-    logic_nn.train(logic_dataset, plot_error=True)
-    pred_labels = logic_nn.test([test[:-1] for test in logic_dataset])
+    X = logic_dataset["X"]
+    y = logic_dataset["y"]
 
-    # for i in range(len(pred_labels)):
-    #     print('Inputs:', logic_dataset[i][:-1], '-->', 'Predicted', [pred_labels[i]], '\tTarget', logic_dataset[i][-1])
+    errors = logic_nn.train(X, y, 0.01, 10000)
+    y_pred = np.round(logic_nn.predict(X)).astype(dtype='int8')
+    print('Accuracy: %.2f%%' % (logic_nn.accuracy(y_pred, y) * 100))
 
-    print("Model accuracy:", logic_nn.accuracy([logic_dataset[i][-1] for i in range(len(logic_dataset))], pred_labels), "%")
+    plt.plot(errors)
+    plt.title('Changes in MSE')
+    plt.xlabel('Epoch (every 10th)')
+    plt.ylabel('MSE')
+    plt.show()
 
     solver = LogicExpressionSolver(solver=logic_nn)
     exp = "(x xor y) pirse (x sheffer z)"
