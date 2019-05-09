@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# np.random.seed(2019)
+np.random.seed(2019)
 
 
 class LogicNeuralNetwork:
@@ -128,7 +128,7 @@ class LogicNeuralNetwork:
             inputs = p
             predicted_proba = self.feed_forward(inputs)
             predicted_labels.append(predicted_proba[0])
-        return predicted_labels
+        return np.array(predicted_labels)
 
     def train(self, X_train, y_train, plot_error=False):
         print_freq = 20
@@ -150,8 +150,14 @@ class LogicNeuralNetwork:
             plt.title('Changes in MSE')
             plt.xlabel('Epoch (every %d-th)' % print_freq)
             plt.ylabel('MSE')
+            plt.savefig("mse.png")
             plt.show()
-        return True
+
+    @staticmethod
+    def scale_data(data):
+        data = data - data.mean(axis=0)
+        data = data / np.abs(data).max(axis=0)
+        return data
 
     @staticmethod
     def accuracy(test_data, pred_data):
@@ -162,7 +168,7 @@ class LogicNeuralNetwork:
 
 
 def f(x):
-    return np.sin(x)
+    return np.cos(x) * np.sin(x)
     # return np.sqrt(1 + 4*x + 12*x**2)
     # return x * np.sin(x * 0.5) * np.cos(x / 0.5)
     # return (1+x)**x
@@ -173,7 +179,7 @@ if __name__ == "__main__":
     np.seterr(all='raise', over='raise')
     x_start, x_end = -5, 5
 
-    nn = LogicNeuralNetwork(1, 10, 1, learning_rate=0.01, activation="tanh", max_iterations=1000)
+    nn = LogicNeuralNetwork(1, 10, 1, learning_rate=0.01, activation="sigmoid", max_iterations=1000)
 
     x_values = np.linspace(x_start, x_end, 1000)
     y_values = np.array([f(x) for x in x_values])
@@ -184,6 +190,7 @@ if __name__ == "__main__":
 
     plt.plot(x_values, y_values)
     plt.plot(x_values, y_pred)
+    plt.savefig('approximation.png')
     plt.show()
 
 
