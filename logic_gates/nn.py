@@ -1,51 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from logic_gates.logic_gates_dataset import logic_dataset
 
-np.random.seed(2019)
+np.random.seed(2628856917)
+print(np.random.get_state()[1][0])
 
 
-class LogicNeuralNetwork:
-    def __init__(self, n_input_neurons, n_hidden_neurons, n_output_neurons, learning_rate=0.001, max_iterations=1000,
-                 activation=None):
-        # number of nodes in layers
-        self.ni = n_input_neurons + 1  # +1 for bias
-        self.nh = n_hidden_neurons
-        self.no = n_output_neurons
-        self.lr = learning_rate
-        self.max_iterations = max_iterations
+class Layer:
+
+    def __init__(self, n_input, n_neurons, activation=None, weights=None, bias=None):
+
+        self.weights = weights if weights is not None else np.random.rand(n_input, n_neurons)
         self.activation = activation
+        self.bias = bias if bias is not None else np.random.rand(n_neurons)
+        self.last_activation = None
+        self.error = None
+        self.delta = None
 
-        # initialize node-activations
-        self.ai = [1.0] * self.ni
-        self.ah = [1.0] * self.nh
-        self.ao = [1.0] * self.no
+    def activate(self, x):
+        r = np.dot(x, self.weights) + self.bias
+        self.last_activation = self._apply_activation(r)
+        return self.last_activation
 
-        # initialize node weights to random vals
-        self.wi = np.random.uniform(-1.0, 1.0, (self.ni, self.nh))
-        self.wo = np.random.uniform(-1.0, 1.0, (self.nh, self.no))
-
-    def feed_forward(self, inputs):
-        if len(inputs) != self.ni - 1:
-            print('incorrect number of inputs')
-
-        for i in range(self.ni - 1):
-            self.ai[i] = inputs[i]
-
-        for j in range(self.nh):
-            hidden_weight = 0.0
-            for i in range(self.ni):
-                hidden_weight += (self.ai[i] * self.wi[i][j])
-            self.ah[j] = self.apply_activation(hidden_weight)
-
-        for k in range(self.no):
-            output_weight = 0.0
-            for j in range(self.nh):
-                output_weight += (self.ah[j] * self.wo[j][k])
-            self.ao[k] = self.apply_activation(output_weight)
-
-        return self.ao
-
-    def apply_activation(self, r):
+    def _apply_activation(self, r):
         if self.activation is None:
             return r
 
@@ -58,7 +35,6 @@ class LogicNeuralNetwork:
         return r
 
     def apply_activation_derivative(self, r):
-
         if self.activation is None:
             return r
 
@@ -70,89 +46,89 @@ class LogicNeuralNetwork:
 
         return r
 
-    def back_propagation(self, targets):
-        # dE/dw[j][k] = (t[k] - ao[k]) * s'( SUM( w[j][k]*ah[j] ) ) * ah[j]
-        # calc output deltas
-        output_deltas = [0.0] * self.no
-        for k in range(self.no):
-            error = targets[k] - self.ao[k]
-            output_deltas[k] = error * self.apply_activation_derivative(self.ao[k])
 
-        # update output weights
-        for j in range(self.nh):
-            for k in range(self.no):
-                # output_deltas[k] * self.ah[j] is the full derivative of dError/dweight[j][k]
-                change = output_deltas[k] * self.ah[j]
-                self.wo[j][k] += self.lr * change
+class NeuralNetwork:
+    def __init__(self):
+        self._layers = []
 
-        # calc hidden deltas
-        hidden_deltas = [0.0] * self.nh
-        for j in range(self.nh):
-            error = 0.0
-            for k in range(self.no):
-                error += output_deltas[k] * self.wo[j][k]
-            hidden_deltas[j] = error * self.apply_activation_derivative(self.ah[j])
+    def add_layer(self, layer):
+        self._layers.append(layer)
 
-        # update input weights
-        for i in range(self.ni):
-            for j in range(self.nh):
-                change = hidden_deltas[j] * self.ai[i]
-                self.wi[i][j] += self.lr * change
+    def feed_forward(self, X):
+        for layer in self._layers:
+            X = layer.activate(X)
+        return X
 
-        # calc combined error
-        # 1/2 for differential convenience & **2 for modulus
-        error = 0.0
-        for k in range(len(targets)):
-            error += 0.5 * (targets[k] - self.ao[k]) ** 2
-        return error
+    def predict(self, X):
+        return self.feed_forward(X)
 
-    def weights(self):
-        print('Input weights:')
-        for i in range(self.ni):
-            print(self.wi[i])
-        print()
-        print('Output weights:')
-        for j in range(self.nh):
-            print(self.wo[j])
-        print('')
+    def backpropagation(self, X, y, learning_rate):
+        output = self.feed_forward(X)
 
-    def test(self, patterns):
-        predicted_labels = []
-        for p in patterns:
-            inputs = p
-            predicted_proba = self.feed_forward(inputs)
-            predicted_labels.append(int(round(predicted_proba[0])))
-        return predicted_labels
+        for i in reversed(range(len(self._layers))):
+            layer = self._layers[i]
 
-    def train(self, patterns, plot_error=False):
-        errors = []
-        for i in range(self.max_iterations):
-            error = 0.0
-            for p in patterns:
-                inputs = p[:-1]
-                targets = [p[-1]]
-                self.feed_forward(inputs)
-                error += self.back_propagation(targets)
+            if layer == self._layers[-1]:
+                layer.error = y - output
+                layer.delta = layer.error * layer.apply_activation_derivative(output)
+            else:
+                next_layer = self._layers[i + 1]
+                layer.error = np.dot(next_layer.weights, next_layer.delta)
+                layer.delta = layer.error * layer.apply_activation_derivative(layer.last_activation)
 
+        for i in range(len(self._layers)):
+            layer = self._layers[i]
+            input_to_use = np.atleast_2d(X if i == 0 else self._layers[i - 1].last_activation)
+            layer.weights += layer.delta * input_to_use.T * learning_rate
+
+    def train(self, X, y, learning_rate, max_epochs):
+        mses = []
+
+        for i in range(max_epochs):
+            for j in range(len(X)):
+                self.backpropagation(X[j], y[j], learning_rate)
             if i % 50 == 0:
-                errors.append(error)
+                mse = np.mean(np.square(y - self.feed_forward(X)))
+                mses.append(mse)
+                print('Epoch: #%s, MSE: %f' % (i, float(mse)))
 
-        print("MSE: ", errors[-1])
-
-        if plot_error:
-            plt.plot(errors)
-            plt.title('Changes in MSE')
-            plt.xlabel('Epoch (every 10th)')
-            plt.ylabel('MSE')
-            plt.show()
+        return mses
 
     @staticmethod
-    def accuracy(test_data, pred_data):
-        if len(test_data) != len(pred_data):
-            print("array sizes do not match")
-
-        return (np.array(test_data) == np.array(pred_data)).mean() * 100
+    def accuracy(y_pred, y_true):
+        return (y_pred == y_true).mean()
 
 
-if __name__ == "__main__":
-    pass
+if __name__ == '__main__':
+    nn = NeuralNetwork()
+    nn.add_layer(Layer(3, 15, 'tanh'))
+    # nn.add_layer(Layer(12, 6, 'tanh'))
+    nn.add_layer(Layer(15, 1, 'tanh'))
+
+    # X = np.array([
+    #     [0, 0, 0],
+    #     [0, 0, 1],
+    #     [0, 1, 0],
+    #     [0, 1, 1],
+    #     [1, 0, 0],
+    #     [1, 0, 1],
+    #     [1, 1, 0],
+    #     [1, 1, 1],
+    # ])
+
+    # y = np.array([[0], [0], [0], [0], [0], [0], [0], [1]])
+
+    X = logic_dataset["X"]
+    y = logic_dataset["y"]
+
+    errors = nn.train(X, y, 0.01, 10000)
+    y_pred = np.round(nn.predict(X)).astype(dtype='int8')
+    print(y_pred)
+    print('Accuracy: %.2f%%' % (nn.accuracy(y_pred, y) * 100))
+
+
+    plt.plot(errors)
+    plt.title('Changes in MSE')
+    plt.xlabel('Epoch (every 10th)')
+    plt.ylabel('MSE')
+    plt.show()
