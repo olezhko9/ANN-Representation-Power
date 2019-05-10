@@ -1,4 +1,4 @@
-from logic_gates.nn import NeuralNetwork, Layer
+from nn import NeuralNetwork, Layer
 from logic_gates.solver import LogicExpressionSolver
 from logic_gates.dataset import logic_dataset
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     plt.plot(errors)
     plt.title('Changes in MSE')
-    plt.xlabel('Epoch (every 10th)')
+    plt.xlabel('Epoch')
     plt.ylabel('MSE')
     plt.show()
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     x_start, x_end = -(-4*np.pi*0 + np.pi)/2 + 1E-3, (-4*np.pi*0 + np.pi)/2 - 1E-3
 
     nn = NeuralNetwork(1111)
-    n = 20
+
     nn.add_layer(Layer(1, 25, "tanh"))
     nn.add_layer(Layer(25, 16, "sigmoid"))
     nn.add_layer(Layer(16, 1, None))
